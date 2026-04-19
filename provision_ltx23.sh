@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Vast template auto-provision script for the current working
+# ComfyUI + built-in LTX-2.3 text-to-video setup.
+# Secrets such as HF_TOKEN should be passed in as template
+# environment variables, not hard-coded into this file.
+
 WORKSPACE_DIR="${WORKSPACE_DIR:-/workspace}"
 COMFYUI_DIR="${WORKSPACE_DIR}/ComfyUI"
 VENV_DIR="${WORKSPACE_DIR}/comfy-env"
@@ -10,6 +15,12 @@ COMFY_LOG="${WORKSPACE_DIR}/comfyui.log"
 exec > >(tee -a "${LOG_FILE}") 2>&1
 
 echo "[provision] starting LTX-2.3 setup"
+
+if [[ -n "${HF_TOKEN:-}" ]]; then
+  echo "[provision] HF_TOKEN detected"
+else
+  echo "[provision] HF_TOKEN not set; public downloads may still work, but authenticated downloads are safer"
+fi
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -39,14 +50,24 @@ python -m pip install -r manager_requirements.txt
 
 mkdir -p "${COMFYUI_DIR}/models/checkpoints/LTX-Video"
 mkdir -p "${COMFYUI_DIR}/models/checkpoints"
+mkdir -p "${COMFYUI_DIR}/models/diffusion_models"
 mkdir -p "${COMFYUI_DIR}/models/latent_upscale_models"
 mkdir -p "${COMFYUI_DIR}/models/loras"
 mkdir -p "${COMFYUI_DIR}/models/text_encoders"
+mkdir -p "${COMFYUI_DIR}/models/vae"
 
 hf download Lightricks/LTX-2.3-fp8 ltx-2.3-22b-dev-fp8.safetensors --local-dir "${COMFYUI_DIR}/models/checkpoints/LTX-Video"
 hf download Lightricks/LTX-2.3 ltx-2.3-22b-distilled-lora-384.safetensors --local-dir "${COMFYUI_DIR}/models/loras"
 hf download Lightricks/LTX-2.3 ltx-2.3-spatial-upscaler-x2-1.1.safetensors --local-dir "${COMFYUI_DIR}/models/latent_upscale_models"
 hf download Comfy-Org/ltx-2 split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
+
+# FLUX.1 Krea Dev additions for strong local image generation and better
+# reference-image creation for future image-to-video workflows.
+hf download black-forest-labs/FLUX.1-Krea-dev flux1-krea-dev_fp8_scaled.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
+hf download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
+hf download comfyanonymous/flux_text_encoders t5xxl_fp16.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
+hf download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
+hf download black-forest-labs/FLUX.1-dev ae.safetensors --local-dir "${COMFYUI_DIR}/models/vae"
 
 mv "${COMFYUI_DIR}/models/text_encoders/split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors" "${COMFYUI_DIR}/models/text_encoders/"
 rm -rf "${COMFYUI_DIR}/models/text_encoders/split_files"
