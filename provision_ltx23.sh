@@ -63,14 +63,18 @@ hf download Comfy-Org/ltx-2 split_files/text_encoders/gemma_3_12B_it_fp4_mixed.s
 
 # FLUX.1 Krea Dev additions for strong local image generation and better
 # reference-image creation for future image-to-video workflows.
-hf download black-forest-labs/FLUX.1-Krea-dev flux1-krea-dev_fp8_scaled.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
+# The ComfyUI tutorial currently points the FP8 scaled Krea file at
+# Comfy-Org/FLUX.1-Krea-dev_ComfyUI, not the base BFL repo.
+hf download Comfy-Org/FLUX.1-Krea-dev_ComfyUI split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
 hf download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
 hf download comfyanonymous/flux_text_encoders t5xxl_fp16.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
 hf download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
-hf download black-forest-labs/FLUX.1-dev ae.safetensors --local-dir "${COMFYUI_DIR}/models/vae"
+hf download black-forest-labs/FLUX.1-schnell ae.safetensors --local-dir "${COMFYUI_DIR}/models/vae"
 
 mv "${COMFYUI_DIR}/models/text_encoders/split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors" "${COMFYUI_DIR}/models/text_encoders/"
+mv "${COMFYUI_DIR}/models/diffusion_models/split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors" "${COMFYUI_DIR}/models/diffusion_models/"
 rm -rf "${COMFYUI_DIR}/models/text_encoders/split_files"
+rm -rf "${COMFYUI_DIR}/models/diffusion_models/split_files"
 
 cp "${COMFYUI_DIR}/models/checkpoints/LTX-Video/ltx-2.3-22b-dev-fp8.safetensors" "${COMFYUI_DIR}/models/checkpoints/"
 
