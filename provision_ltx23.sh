@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Vast template auto-provision script for the current working
-# ComfyUI + built-in LTX-2.3 text-to-video setup.
+# ComfyUI + LTX-2.3 + FLUX image/video stack.
 # Secrets such as HF_TOKEN should be passed in as template
 # environment variables, not hard-coded into this file.
 
@@ -14,7 +14,7 @@ COMFY_LOG="${WORKSPACE_DIR}/comfyui.log"
 
 exec > >(tee -a "${LOG_FILE}") 2>&1
 
-echo "[provision] starting LTX-2.3 setup"
+echo "[provision] starting LTX-2.3 + FLUX setup"
 
 if [[ -n "${HF_TOKEN:-}" ]]; then
   echo "[provision] HF_TOKEN detected"
@@ -61,20 +61,31 @@ hf download Lightricks/LTX-2.3 ltx-2.3-22b-distilled-lora-384.safetensors --loca
 hf download Lightricks/LTX-2.3 ltx-2.3-spatial-upscaler-x2-1.1.safetensors --local-dir "${COMFYUI_DIR}/models/latent_upscale_models"
 hf download Comfy-Org/ltx-2 split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
 
-# FLUX.1 Krea Dev additions for strong local image generation and better
-# reference-image creation for future image-to-video workflows.
-# The ComfyUI tutorial currently points the FP8 scaled Krea file at
-# Comfy-Org/FLUX.1-Krea-dev_ComfyUI, not the base BFL repo.
+# FLUX image stack for hero-frame generation, editing, and reference-based
+# workflows before sending final stills into LTX-2.3 for animation.
+# Krea Dev is the base text-to-image model. Fill Dev handles inpainting and
+# outpainting. Kontext Dev handles image-guided editing and style transfer.
+# FLUX.2 Dev adds the strongest native multi-image reference workflow.
 hf download Comfy-Org/FLUX.1-Krea-dev_ComfyUI split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
+hf download black-forest-labs/FLUX.1-Fill-dev flux1-fill-dev.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
+hf download Comfy-Org/flux1-kontext-dev_ComfyUI split_files/diffusion_models/flux1-dev-kontext_fp8_scaled.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
+hf download Comfy-Org/flux2-dev split_files/diffusion_models/flux2_dev_fp8mixed.safetensors --local-dir "${COMFYUI_DIR}/models/diffusion_models"
 hf download comfyanonymous/flux_text_encoders clip_l.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
 hf download comfyanonymous/flux_text_encoders t5xxl_fp16.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
 hf download comfyanonymous/flux_text_encoders t5xxl_fp8_e4m3fn.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
+hf download Comfy-Org/flux2-dev split_files/text_encoders/mistral_3_small_flux2_bf16.safetensors --local-dir "${COMFYUI_DIR}/models/text_encoders"
 hf download black-forest-labs/FLUX.1-schnell ae.safetensors --local-dir "${COMFYUI_DIR}/models/vae"
+hf download Comfy-Org/flux2-dev split_files/vae/flux2-vae.safetensors --local-dir "${COMFYUI_DIR}/models/vae"
 
 mv "${COMFYUI_DIR}/models/text_encoders/split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors" "${COMFYUI_DIR}/models/text_encoders/"
+mv "${COMFYUI_DIR}/models/text_encoders/split_files/text_encoders/mistral_3_small_flux2_bf16.safetensors" "${COMFYUI_DIR}/models/text_encoders/"
 mv "${COMFYUI_DIR}/models/diffusion_models/split_files/diffusion_models/flux1-krea-dev_fp8_scaled.safetensors" "${COMFYUI_DIR}/models/diffusion_models/"
+mv "${COMFYUI_DIR}/models/diffusion_models/split_files/diffusion_models/flux1-dev-kontext_fp8_scaled.safetensors" "${COMFYUI_DIR}/models/diffusion_models/"
+mv "${COMFYUI_DIR}/models/diffusion_models/split_files/diffusion_models/flux2_dev_fp8mixed.safetensors" "${COMFYUI_DIR}/models/diffusion_models/"
+mv "${COMFYUI_DIR}/models/vae/split_files/vae/flux2-vae.safetensors" "${COMFYUI_DIR}/models/vae/"
 rm -rf "${COMFYUI_DIR}/models/text_encoders/split_files"
 rm -rf "${COMFYUI_DIR}/models/diffusion_models/split_files"
+rm -rf "${COMFYUI_DIR}/models/vae/split_files"
 
 cp "${COMFYUI_DIR}/models/checkpoints/LTX-Video/ltx-2.3-22b-dev-fp8.safetensors" "${COMFYUI_DIR}/models/checkpoints/"
 
